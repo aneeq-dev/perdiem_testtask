@@ -5,10 +5,9 @@ dist/
 *.log
 
 # Env
-.env
-.env.local
 server/server/.env
 frontend/.env.local
 
 # OS/editor
 .DS_Store
+config.bat
