@@ -40,7 +40,9 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [visibleItems, setVisibleItems] = useState<Record<string, boolean>>({});
   const headerRef = useRef<HTMLElement | null>(null);
+  const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
     const savedTheme = localStorage.getItem(THEME_KEY);
@@ -118,6 +120,32 @@ export default function Home() {
       }))
       .filter((group) => group.items.length > 0);
   }, [groups, search]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const id = (entry.target as HTMLElement).dataset.itemId;
+          if (!id) return;
+          if (entry.isIntersecting) {
+            setVisibleItems((prev) => (prev[id] ? prev : { ...prev, [id]: true }));
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        root: null,
+        rootMargin: "0px",
+        threshold: 0.2,
+      }
+    );
+
+    Object.values(itemRefs.current).forEach((el) => {
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [visibleGroups]);
 
   if (loading && locations.length === 0) {
     return (
@@ -202,7 +230,13 @@ export default function Home() {
                 return (
                   <div
                     key={item.id}
-                    className="w-[85%] shrink-0 snap-start rounded-lg border border-border p-3 transition hover:shadow-md sm:w-[320px]"
+                    ref={(el) => {
+                      itemRefs.current[item.id] = el;
+                    }}
+                    data-item-id={item.id}
+                    className={`w-[85%] shrink-0 snap-start rounded-lg border border-border p-3 transition-all duration-500 ease-out hover:shadow-md hover:-translate-y-0.5 sm:w-[320px] ${
+                      visibleItems[item.id] ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                    }`}
                   >
                     <img
                       src={item.imageUrl || "/placeholder.jpg"}
