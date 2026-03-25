@@ -1,199 +1,102 @@
-# Interactive Event Seating Map
+# Frontend (Next.js) – Per Diem Menu Browser
 
-A React + TypeScript application for selecting seats at an event venue with an interactive seating map. Built with Next.js 14, featuring smooth performance for large venues (15,000+ seats), full keyboard accessibility, and localStorage persistence.
+Mobile‑first menu browser that consumes the backend Square proxy. Supports location selection, category navigation, horizontal carousels, search, loading states, dark/light theme (persisted), and accessible UI.
 
-## Features
+## Tech Stack
+- Next.js 16 (App Router), React 19, TypeScript
+- Tailwind CSS v4
+- Simple scroll-snap carousels with IntersectionObserver animations
 
-### Core Requirements ✅
-- **Interactive Seating Map**: SVG-based rendering with precise seat positioning
-- **Performance**: Smooth 60fps rendering for large venues using React.memo and optimized SVG
-- **Dual Input Support**: Both mouse click and keyboard navigation (Tab, Enter, Space)
-- **Seat Details Panel**: Real-time display of section, row, seat number, price, and status
-- **Selection Management**: Select up to 8 seats with live subtotal calculation
-- **Persistent Selection**: Saves selection to localStorage, restored on page reload
-- **Full Accessibility**: 
-  - ARIA labels and roles on all interactive elements
-  - Keyboard navigation with visible focus states
-  - Screen reader support
-- **Responsive Design**: Works seamlessly on desktop and mobile viewports
+## How it works
+- Loads locations from the backend proxy (`GET /api/locations`)
+- Persists selected location in `localStorage` (`selected_location_id`)
+- Fetches categories and items by location:
+  - `GET /api/catalog/categories?location_id=...`
+  - `GET /api/catalog?location_id=...`
+- Groups items by category and renders each category as a one‑row horizontal carousel
+- Search filters client-side on item name/description
+- Dark/light theme toggle is saved to `localStorage` (`selected_theme`)
 
-### Stretch Goals Implemented ✅
-- **Heat Map Toggle**: Visualize seats by price tier with color-coded heat map
-- **Find Adjacent Seats**: Helper button to automatically find N consecutive available seats
-- **Dark Mode**: WCAG 2.1 AA compliant dark mode with toggle
-- **Toast Notifications**: User feedback for actions via shadcn/ui toast system
+## Environment
+Create `.env.local` (values below are typical for local Docker setup):
 
-## Architecture Decisions
+```
+NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
+```
 
-### Technology Stack
-- **Next.js 14** (App Router): Chose Next.js for its excellent TypeScript support, built-in optimizations, and modern React features
-- **SVG Rendering**: Selected SVG over Canvas for better accessibility (individual seat elements can have ARIA attributes), easier styling, and simpler event handling
-- **shadcn/ui Components**: Leveraged pre-built accessible components to focus on core functionality
-- **Custom Hooks**: Separated concerns with `useSeatSelection` and `useTheme` hooks for reusable stateful logic
+If you’re running the backend on a different host/port, update `NEXT_PUBLIC_API_BASE_URL` accordingly.
 
-### Performance Optimizations
-1. **React.memo**: Memoized `Seat` component to prevent unnecessary re-renders
-2. **useMemo**: Cached derived data (seat maps, selected seat arrays) to avoid recalculation
-3. **Set for Selection**: Used `Set<string>` for O(1) lookup of selected seats
-4. **Minimal Re-renders**: State updates only trigger affected components
-5. **SVG Optimization**: Simple circle elements with minimal DOM manipulation
+## Run (Dev)
 
-### State Management
-- **Local State**: Used React hooks for UI state (no external state library needed)
-- **localStorage**: Persistent selection across sessions with error handling
-- **Custom Hooks**: Encapsulated complex logic (seat selection, theme) in reusable hooks
+```
+pnpm install   # or npm install
+pnpm dev       # or npm run dev
+```
 
-### Accessibility Strategy
-- Each seat is a focusable button with descriptive aria-label
-- Keyboard navigation supported (Tab to move, Enter/Space to select)
-- Focus states clearly visible with stroke styling
-- Semantic HTML structure with proper ARIA roles
-- Screen reader announcements for seat details and selection status
-- Color contrast meets WCAG 2.1 AA standards in both light and dark modes
+Dev server runs at:
 
-### Trade-offs
-1. **SVG vs Canvas**: SVG is slightly slower for 50,000+ seats but provides better accessibility and simpler code. For the target of 15,000 seats, SVG performs excellently at 60fps.
-2. **No Virtual Scrolling**: With optimized SVG, all seats can render at once without virtual scrolling complexity.
-3. **No State Management Library**: For this scope, React hooks suffice. Would consider Zustand or Redux for multi-page seat booking flows.
-4. **Simple Adjacent Seat Algorithm**: Linear search through rows. Could optimize with preprocessing for very large venues, but current performance is acceptable.
+```
+http://localhost:4000
+```
 
-## Project Structure
+Make sure the backend is running on:
 
-\`\`\`
-├── app/
-│   ├── layout.tsx          # Root layout with metadata
-│   ├── page.tsx            # Main application page
-│   └── globals.css         # Global styles and design tokens
-├── components/
-│   ├── ui/                 # shadcn/ui components (auto-generated)
-│   ├── seat.tsx            # Individual seat component (memoized)
-│   ├── seating-map.tsx     # SVG seating map container
-│   ├── seat-details.tsx    # Selected seat details panel
-│   ├── selection-summary.tsx # Cart with subtotal
-│   ├── controls.tsx        # Heat map, find adjacent, theme toggles
-│   └── legend.tsx          # Color legend for seat statuses
-├── hooks/
-│   ├── use-seat-selection.ts # Selection logic and localStorage
-│   └── use-theme.ts        # Dark mode toggle and persistence
-├── lib/
-│   ├── types.ts            # TypeScript type definitions
-│   ├── seat-utils.ts       # Seat pricing, filtering, adjacency logic
-│   └── storage.ts          # localStorage wrapper
-├── public/
-│   └── venue.json          # Venue data (seat coordinates, statuses)
-└── tsconfig.json           # TypeScript strict mode config
-\`\`\`
+```
+http://localhost:3000
+```
 
-## Getting Started
+## Build & Start (Prod)
 
-### Prerequisites
-- Node.js 18+ and pnpm installed
-
-### Installation & Running
-
-\`\`\`bash
-# Install dependencies
-pnpm install
-
-# Start development server
-pnpm dev
-\`\`\`
-
-The application will be available at `http://localhost:4000`
-
-### Building for Production
-
-\`\`\`bash
-# Build optimized production bundle
+```
 pnpm build
-
-# Start production server
 pnpm start
-\`\`\`
+```
 
-## Usage
+## Key UX Features
+- Loading spinners:
+  - Initial page load
+  - Subsequent reloads (on location change)
+- Horizontal carousels per category:
+  - One row per category, scrollable, with snap alignment
+  - Cards animate-in on scroll (fade/slide) using `IntersectionObserver`
+- Category navigation:
+  - Sticky header with dynamic offset scroll to target category
+- Dark mode:
+  - Toggle in header, persisted via `localStorage` and uses system default when unset
+- Accessibility:
+  - Keyboard and screen‑reader friendly structure and labels
 
-1. **Select Seats**: Click or use keyboard (Tab + Enter) to select available seats (green)
-2. **View Details**: Focused seat details appear in the right sidebar
-3. **Heat Map**: Toggle to visualize price tiers (red = expensive, green = cheap)
-4. **Find Adjacent**: Use dropdown to automatically find N consecutive available seats
-5. **Dark Mode**: Toggle theme with sun/moon icon
-6. **Clear Selection**: Click "Clear Selection" button to deselect all seats
-7. **Persistent State**: Your selection is saved and restored on page reload
+## File Tour
+- `app/page.tsx`: Main UI and data flow (locations, categories, items, carousels, theme persistence, search)
+- `app/layout.tsx`: Root layout, metadata
+- `app/globals.css` + `styles/globals.css`: Tailwind theme tokens, global styles
+- `public/`: Icons and placeholders
 
-### Seat Status Colors
-- **Green**: Available for selection
-- **Blue**: Currently selected by you
-- **Amber**: Reserved by another user
-- **Red**: Sold (unavailable)
-- **Violet**: Held temporarily
+## Architecture Decisions and Trade-offs
+- **Single-page App Router approach**: Kept everything in `app/page.tsx` for fast iteration and simpler challenge delivery.  
+  **Trade-off**: As features grow, this file can become large; next step would be splitting into feature hooks/components.
+- **Backend-proxy-only data access**: Frontend never calls Square directly, only the backend `/api/*` endpoints.  
+  **Trade-off**: Adds one network hop, but keeps tokens secure and centralizes API mapping/caching.
+- **Client-side search filtering**: Search is applied to already-fetched menu data for instant UX.  
+  **Trade-off**: For very large catalogs, client memory/render cost increases; server-side search could scale better.
+- **Horizontal scroll-snap carousels instead of heavy carousel library**: Lightweight native scroll behavior with CSS snap and simple controls.  
+  **Trade-off**: Fewer advanced features (looping/virtualization) than a full carousel library.
+- **IntersectionObserver reveal animations**: Chosen for performance and minimal dependency overhead.  
+  **Trade-off**: Animations rely on viewport observation and may vary slightly across browsers/devices.
+- **Theme persistence via localStorage**: Dark/light preference survives refresh and sessions.  
+  **Trade-off**: Theme state is client-only; SSR-specific theming and cookie-based sync are not implemented.
 
-## Testing
+## Assumptions and Limitations
+- Assumes backend is reachable via `NEXT_PUBLIC_API_BASE_URL` and CORS allows frontend origin.
+- Assumes Square catalog mapping is normalized by backend; frontend expects grouped category payloads.
+- Assumes one primary category per item for grouping in UI (backend currently uses the first available category link).
+- No server-side rendering of menu data; content loads client-side after hydration.
+- No pagination UI on frontend because backend already aggregates paginated Square results.
+- No authenticated user flows (ACL/authz) as challenge scope did not require it.
+- No image optimization pipeline beyond standard browser loading (placeholder used when image is missing).
+- E2E browser tests for frontend interactions are not included; behavior is validated through implemented states and backend tests.
 
-While no automated tests are included in this submission (due to time constraints), the application has been manually tested for:
+## Troubleshooting
+- If you see CORS errors, ensure backend allows the frontend origin (`http://localhost:4000`) via `CORS_ORIGIN` and that API requests go to the backend base (`NEXT_PUBLIC_API_BASE_URL`).
+- If categories are “Uncategorized”, ensure Square items have category linkage; backend supports both `item_data.category_id` and `item_data.categories[0].id`.
 
-- ✅ Rendering performance with 40+ seats (expandable to 15,000+)
-- ✅ Keyboard navigation across all seats
-- ✅ Selection limit enforcement (max 8 seats)
-- ✅ localStorage persistence across page reloads
-- ✅ Responsive design on mobile (390px) to desktop (1920px+)
-- ✅ Dark mode color contrast (WCAG AA)
-- ✅ Screen reader compatibility (tested with VoiceOver)
-
-### Recommended Test Suite (Future Work)
-\`\`\`bash
-# Unit tests with Vitest
-pnpm test
-
-# E2E tests with Playwright
-pnpm test:e2e
-\`\`\`
-
-**Test coverage would include:**
-- Seat selection logic (max 8, toggle selection)
-- Adjacent seat finding algorithm
-- localStorage save/load
-- Keyboard navigation flow
-- Responsive layout breakpoints
-
-## Incomplete Features / Future Enhancements
-
-### Not Implemented (Stretch Goals)
-1. **WebSocket Live Updates**: Would add real-time seat status changes using Socket.io or Pusher
-2. **Pinch-Zoom/Pan**: Would implement touch gestures for mobile using `react-zoom-pan-pinch`
-3. **E2E Tests**: Would add Playwright tests for complete user flows
-
-### Potential Improvements
-- Add seat filtering by price range
-- Show venue map/stage orientation
-- Add transaction checkout flow
-- Implement seat hold timer (time-limited selection)
-- Add animations for seat status changes
-- Optimize for 50,000+ seats with Canvas fallback
-- Add seat tooltips on hover
-- Export selection as PDF ticket
-
-## Technical Notes
-
-- **TypeScript strict mode** enabled in `tsconfig.json`
-- **ESLint** configured with Next.js defaults
-- **Prettier** formatting (recommended)
-- **No external state library** - pure React hooks
-- **Tailwind CSS v4** with design tokens for theming
-- **shadcn/ui** for accessible UI components
-
-## Browser Support
-
-Tested and working on:
-- Chrome 120+
-- Firefox 121+
-- Safari 17+
-- Edge 120+
-
-## License
-
-MIT
-
-## Author
-
-Built as a take-home assessment for front-end engineering position.
