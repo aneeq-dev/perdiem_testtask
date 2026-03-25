@@ -1,0 +1,25 @@
+version: "3.9"
+services:
+  backend:
+    build:
+      context: ./server/server
+    environment:
+      PORT: 3000
+      NODE_ENV: development
+      SQUARE_ACCESS_TOKEN: ${SQUARE_ACCESS_TOKEN}
+      SQUARE_ENVIRONMENT: ${SQUARE_ENVIRONMENT:-sandbox}
+      SQUARE_WEBHOOK_SIGNATURE_KEY: ${SQUARE_WEBHOOK_SIGNATURE_KEY:-}
+      CORS_ORIGIN: http://localhost:4000
+    ports:
+      - "3000:3000"
+
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:3000
+    ports:
+      - "4000:3000"
+    depends_on:
+      - backend
+
